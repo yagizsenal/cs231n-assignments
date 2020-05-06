@@ -79,8 +79,10 @@ class TwoLayerNet(object):
         # shape (N, C).                                                             #
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
+        
+        f = lambda x: np.maximum(x,0)
+        H = f(np.dot(X,W1) + b1)
+        scores = np.dot(H,W2) + b2
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -98,7 +100,14 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        num_train = X.shape[0]
+        num_class = W2.shape[1]
+        
+        scores_normalized = scores - np.reshape(np.max(scores,axis=1),(num_train,1))
+        exps = np.exp(scores_normalized)
+        softmax = exps / np.reshape(np.sum(exps,axis=1),(num_train,1))
+        hinge = -np.log(softmax[range(num_train),y])
+        loss = np.mean(hinge) + reg * (np.sum(W1*W1) + np.sum(W2*W2))
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -110,8 +119,22 @@ class TwoLayerNet(object):
         # grads['W1'] should store the gradient on W1, and be a matrix of same size #
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        
+        # L = Hinge(H . W_2)
+        # H = ReLU(X . W_1)
+        
+        dhdw2 = softmax
+        dhdw2[range(num_train),y] -= 1
+        grad_W2 = np.dot(H.T,dhdw2)
+        grads['W2'] = grad_W2/num_train + reg * 2 * W2
+        
+        
+        dldal1 = np.dot(dhdw2,W2.T)
+        dldzl1 = dldal1 * (H > 0)
+        grad_W1 = np.dot(X.T,dldzl1)
+        grads['W1'] = grad_W1/num_train + reg * 2 * W1
 
-        pass
+        
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -156,7 +179,9 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            batch_indices = np.random.choice(num_train,batch_size)
+            X_batch = X[batch_indices]
+            y_batch = y[batch_indices]
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -172,7 +197,8 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            self.params['W1'] -= learning_rate * grads['W1']
+            self.params['W2'] -= learning_rate * grads['W2']
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -211,14 +237,18 @@ class TwoLayerNet(object):
           the elements of X. For all i, y_pred[i] = c means that X[i] is predicted
           to have class c, where 0 <= c < C.
         """
+        
         y_pred = None
 
         ###########################################################################
         # TODO: Implement this function; it should be VERY simple!                #
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
+        
+        f = lambda x: np.maximum(x,0)
+        H = f(np.dot(X,self.params['W1']) + self.params['b1'])
+        scores = np.dot(H,self.params['W2']) + self.params['b2']
+        y_pred = np.argmax(scores,axis=1)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
